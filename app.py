@@ -3,25 +3,41 @@ import numpy as np
 import pickle
 
 # Load model and scaler
-model = pickle.load(open('fraud_model.pkl', 'rb'))
-scaler = pickle.load(open('scaler.pkl', 'rb'))
+with open('model.pkl', 'rb') as f:
+    model = pickle.load(f)
+
+with open('scaler.pkl', 'rb') as f:
+    scaler = pickle.load(f)
 
 st.title("💳 Credit Card Fraud Detection")
 
-# Input fields for features
-input_data = []
-for i in range(1, 29):  # V1 to V28
-    value = st.number_input(f"V{i}", step=0.01)
-    input_data.append(value)
+st.markdown("Enter the transaction details below:")
 
-amount = st.number_input("Amount", step=0.01)
+# Collect user input
+input_data = []
+
+# Add 'Time' input
+time = st.number_input("Time", value=0.0)
+input_data.append(time)
+
+# Add V1 to V28 inputs
+for i in range(1, 29):
+    input_data.append(st.number_input(f"V{i}", value=0.0))
+
+# Add 'Amount' input
+amount = st.number_input("Amount", value=0.0)
 input_data.append(amount)
 
-# Predict
+# Convert to NumPy array
+input_data = np.array(input_data).reshape(1, -1)
+
+# Predict button
 if st.button("Predict"):
-    features = scaler.transform([input_data])
-    result = model.predict(features)[0]
-    if result == 1:
-        st.error("⚠️ Fraud Detected!")
-    else:
-        st.success("✅ Transaction is Legitimate.")
+    try:
+        # Scale and predict
+        input_scaled = scaler.transform(input_data)
+        prediction = model.predict(input_scaled)
+        result = "🛑 Fraud" if prediction[0] == 1 else "✅ Not Fraud"
+        st.success(f"Prediction: {result}")
+    except ValueError as e:
+        st.error(f"Input error: {e}")
